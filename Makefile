@@ -5,7 +5,7 @@ all: dist
 
 .PHONY: clean
 clean:
-	rm *.zip
+	rm -f *.zip
 	rm -rf $(source_directory)/dist
 
 .PHONY: test
