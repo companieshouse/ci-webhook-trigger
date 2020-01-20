@@ -1,3 +1,5 @@
+FUNCTION_NAME = webhook-trigger
+
 source_directory := source
 
 .PHONY: all
@@ -17,15 +19,12 @@ test-unit:
 
 .PHONY: package
 package:
-ifndef function_name
-	$(error No function_name given. Aborting)
-endif
 ifndef version
 	$(error No version given. Aborting)
 endif
 	$(info Packaging version: $(version))
 	cd $(source_directory) && lambda build
-	mv $(source_directory)/dist/*$(function_name).zip ./$(function_name)-$(version).zip
+	mv $(source_directory)/dist/*$(FUNCTION_NAME).zip ./$(FUNCTION_NAME)-$(version).zip
 
 .PHONY: dist
 dist: clean package
