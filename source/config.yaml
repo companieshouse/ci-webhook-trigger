@@ -1,0 +1,4 @@
+function_name: webhook-trigger
+handler: webhook-trigger.handler
+description: Used to trigger builds on receipt of Github webhooks
+runtime: python3.7
