@@ -67,6 +67,7 @@ def trigger_resource_check(path, webhook_token, event):
     trigger_response = requests.post(check_url)
     if trigger_response.status_code != 201:
         logging.error(f"Error: {trigger_response.content}")
+        # Append status_code to the event to add extra context to the output slack message
         event['status_code'] = trigger_response.status_code
         sendSlackErrorMessage(event)
         raise Exception(f"{trigger_response.content}")
