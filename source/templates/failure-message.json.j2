@@ -3,7 +3,7 @@
   "attachments": [
     {
       "fallback": "Webhook failed to action",
-      "pretext": "Webhook failed to action against *<{{ repository.html_url }}|{{ repository.name }}>*{% if status_code == 401%} due to an invalid webhook token{% endif %}",
+      "pretext": "Webhook failed to action against *<{{ repository.html_url }}|{{ repository.name }}>*{% if status_code == 401 %} due to an invalid webhook token{% endif %}",
       "fields": [
           {
               "title": "Repository",
