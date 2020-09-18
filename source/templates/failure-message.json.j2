@@ -1,0 +1,30 @@
+{
+  "channel": "webhook-failures-test",
+  "attachments": [
+    {
+      "fallback": "Webhook failed to action",
+      "pretext": "Webhook failed to action against *<{{ repository.html_url }}|{{ repository.name }}>*{% if status_code == 401%} due to an invalid webhook token{% endif %}",
+      "fields": [
+          {
+              "title": "Repository",
+              "value": "{{ repository.name }}",
+              "short": "true"
+          },
+          {
+              "title": "Triggered by",
+              "value": "{{ sender.login }}",
+              "short": "true"
+          }
+          {% if status_code %}
+          ,{
+              "title": "Status code",
+              "value": "{{ status_code }}",
+              "short": "true"
+          }
+          {% endif %}
+      ],
+      "color": "#FF0000",
+      "footer": "<{{ repository.html_url }}|{{ repository.name }}>"
+    }
+  ]
+}
