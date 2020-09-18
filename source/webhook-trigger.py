@@ -27,7 +27,6 @@ def extract_payload(event):
         return payload
     except Exception:
         logging.error('Payload parsing failed')
-        sendSlackErrorMessage(event)
         sys.exit(1);
 
 def handler(event, context):
@@ -42,7 +41,7 @@ def handler(event, context):
         logging.info(f"Webhook received - id:[{github_delivery}], repository:[{repository}], type:[{event_type}], user:[{sender}]")
     except Exception:
         logging.error('Request parsing failed')
-        sendSlackErrorMessage(event)
+        sendSlackErrorMessage(event, None)
         sys.exit(1);
 
     if event_type in ["pull_request","push"]:
@@ -67,9 +66,7 @@ def trigger_resource_check(path, webhook_token, event):
     trigger_response = requests.post(check_url)
     if trigger_response.status_code != 201:
         logging.error(f"Error: {trigger_response.content}")
-        # Append status_code to the event to add extra context to the output slack message
-        event['status_code'] = trigger_response.status_code
-        sendSlackErrorMessage(event)
+        sendSlackErrorMessage(event, trigger_response.status_code)
         raise Exception(f"{trigger_response.content}")
 
 def verify_environment(variables):
@@ -79,7 +76,13 @@ def verify_environment(variables):
             logging.error(f"Missing variable [{variable}] - {variables[variable]}")
             sys.exit(1);
 
-def sendSlackErrorMessage(event):
+def sendSlackErrorMessage(event, status_code):
+    payload = extract_payload(event)
+    if status_code != None:
+        # Append status_code to payload for added context
+        # in the output Slack message
+        payload['status_code'] = status_code
+
     slackWebhookUrl = os.getenv("SLACK_WEBHOOK_URL")
 
     loader = jinja2.FileSystemLoader("templates")
@@ -87,6 +90,6 @@ def sendSlackErrorMessage(event):
     env.filters['jsonify'] = json.dumps
 
     template = env.get_template('failure-message.json.j2')
-    message = template.render(event)
+    message = template.render(payload)
 
     requests.post(slackWebhookUrl, headers = {'content-type': 'application/json'}, json = json.loads(message))
