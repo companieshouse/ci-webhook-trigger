@@ -83,7 +83,7 @@ def sendSlackErrorMessage(event, status_code):
         # in the output Slack message
         payload['status_code'] = status_code
 
-    slackWebhookUrl = os.getenv("SLACK_WEBHOOK_URL")
+    slack_webhook_url = os.getenv("SLACK_WEBHOOK_URL")
 
     loader = jinja2.FileSystemLoader("templates")
     env = jinja2.Environment(loader=loader)
@@ -92,4 +92,4 @@ def sendSlackErrorMessage(event, status_code):
     template = env.get_template('failure-message.json.j2')
     message = template.render(payload)
 
-    requests.post(slackWebhookUrl, headers = {'content-type': 'application/json'}, json = json.loads(message))
+    requests.post(slack_webhook_url, headers = {'content-type': 'application/json'}, json = json.loads(message))
