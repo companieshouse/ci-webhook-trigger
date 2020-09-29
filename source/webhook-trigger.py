@@ -77,11 +77,9 @@ def verify_environment(variables):
             sys.exit(1);
 
 def sendSlackErrorMessage(event, status_code):
-    payload = extract_payload(event)
+    values = extract_payload(event)
     if status_code != None:
-        # Append status_code to payload for added context
-        # in the output Slack message
-        payload['status_code'] = status_code
+        values['status_code'] = status_code
 
     slack_webhook_url = os.getenv("SLACK_WEBHOOK_URL")
 
@@ -90,6 +88,6 @@ def sendSlackErrorMessage(event, status_code):
     env.filters['jsonify'] = json.dumps
 
     template = env.get_template('failure-message.json.j2')
-    message = template.render(payload)
+    message = template.render(values)
 
     requests.post(slack_webhook_url, headers = {'content-type': 'application/json'}, json = json.loads(message))
