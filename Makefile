@@ -1,6 +1,7 @@
 FUNCTION_NAME = webhook-trigger
 
 source_directory := source
+templates_directory := templates
 
 .PHONY: all
 all: dist
@@ -25,6 +26,8 @@ endif
 	$(info Packaging version: $(version))
 	cd $(source_directory) && lambda build
 	mv $(source_directory)/dist/*$(FUNCTION_NAME).zip ./$(FUNCTION_NAME)-$(version).zip
+	# Add templates to zipped artifact
+	zip -ur $(FUNCTION_NAME)-$(version).zip $(templates_directory)
 
 .PHONY: dist
 dist: clean package

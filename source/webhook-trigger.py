@@ -8,9 +8,11 @@ import re
 import requests
 import sys
 import urllib
+import jinja2
 
 VARIABLES = {
-  "CONCOURSE_URL": "The URL through which we'll force resource checks"
+  "CONCOURSE_URL": "The URL through which we'll force resource checks",
+  "SLACK_WEBHOOK_URL": "The URL of the Slack webhook we will use to publish messages"
 }
 
 logging.basicConfig()
@@ -39,12 +41,13 @@ def handler(event, context):
         logging.info(f"Webhook received - id:[{github_delivery}], repository:[{repository}], type:[{event_type}], user:[{sender}]")
     except Exception:
         logging.error('Request parsing failed')
+        sendSlackErrorMessage(event, None)
         sys.exit(1);
 
     if event_type in ["pull_request","push"]:
         path = event['path']
         webhook_token = event['multiValueQueryStringParameters']['webhook_token'][0]
-        trigger_resource_check(path, webhook_token)
+        trigger_resource_check(path, webhook_token, event)
     else:
         logging.info(f"Ignoring [{event_type}] event")
 
@@ -54,7 +57,7 @@ def handler(event, context):
         "isBase64Encoded": False
     }
 
-def trigger_resource_check(path, webhook_token):
+def trigger_resource_check(path, webhook_token, event):
     concourse_url = os.getenv("CONCOURSE_URL")
     url_args = {"webhook_token": webhook_token}
     check_url = f"{concourse_url}{path}?{urllib.parse.urlencode(url_args)}"
@@ -63,6 +66,7 @@ def trigger_resource_check(path, webhook_token):
     trigger_response = requests.post(check_url)
     if trigger_response.status_code != 201:
         logging.error(f"Error: {trigger_response.content}")
+        sendSlackErrorMessage(event, trigger_response.status_code)
         raise Exception(f"{trigger_response.content}")
 
 def verify_environment(variables):
@@ -71,3 +75,19 @@ def verify_environment(variables):
         if (value is None):
             logging.error(f"Missing variable [{variable}] - {variables[variable]}")
             sys.exit(1);
+
+def sendSlackErrorMessage(event, status_code):
+    values = extract_payload(event)
+    if status_code != None:
+        values['status_code'] = status_code
+
+    slack_webhook_url = os.getenv("SLACK_WEBHOOK_URL")
+
+    loader = jinja2.FileSystemLoader("templates")
+    env = jinja2.Environment(loader=loader)
+    env.filters['jsonify'] = json.dumps
+
+    template = env.get_template('failure-message.json.j2')
+    message = template.render(values)
+
+    requests.post(slack_webhook_url, headers = {'content-type': 'application/json'}, json = json.loads(message))
