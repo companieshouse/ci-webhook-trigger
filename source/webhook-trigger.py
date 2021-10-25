@@ -12,20 +12,41 @@ import urllib
 import jinja2
 import sys
 
-MIN_PYTHON = (3, 7)
-
-if sys.version_info < MIN_PYTHON:
-    sys.exit(
-        "Found Python "
-        + sys.version_info
-        + " but Python %s.%s or later is required.\n" % MIN_PYTHON
-    )
-
 
 VARIABLES = {
     "CONCOURSE_URL": "The URL through which we'll force resource checks",
     "SLACK_WEBHOOK_URL": "The URL of the Slack webhook we will use to publish messages",
 }
+
+MIN_PYTHON = (3, 7)
+
+
+def send_slack_error_message(event, status_code):
+    values = extract_payload(event)
+    if status_code is not None:
+        values["status_code"] = status_code
+
+    slack_webhook_url = os.getenv("SLACK_WEBHOOK_URL")
+
+    loader = jinja2.FileSystemLoader("templates")
+    env = jinja2.Environment(loader=loader)
+    env.filters["jsonify"] = json.dumps
+
+    template = env.get_template("failure-message.json.j2")
+    message = template.render(values)
+
+    requests.post(
+        slack_webhook_url,
+        headers={"content-type": "application/json"},
+        json=json.loads(message),
+    )
+
+
+if sys.version_info < MIN_PYTHON:
+    error_message = "Found Python " + str(sys.version_info) + " but Python %s.%s or later is required. " \
+                                                              "Unable to find towel. Panicking.\n" % MIN_PYTHON
+    send_slack_error_message(error_message, None)
+    sys.exit(error_message)
 
 
 logging.basicConfig()
@@ -34,8 +55,10 @@ logging.getLogger().setLevel(logging.INFO)
 
 def exception_message(origin_message, exception_object):
     template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-    message = template.format(type(exception_object).__name__, exception_object.args)
-    return origin_message + " " + message
+    exception_message_content = template.format(type(exception_object).__name__, exception_object.args)
+    out_message = origin_message + " " + exception_message_content
+    send_slack_error_message(out_message, None)
+    return out_message
 
 
 def extract_payload(event):
@@ -46,7 +69,8 @@ def extract_payload(event):
         payload = json.loads(payload_json[0])
         return payload
     except Exception as ex:
-        logging.error(exception_message("Payload parsing failed.", ex))
+        message = exception_message("Payload parsing failed.", ex)
+        logging.error(message)
         sys.exit(1)
 
 
@@ -66,8 +90,8 @@ def handler(event, context):
             f"user:[{sender}]"
         )
     except Exception as ex:
-        logging.error(exception_message("Request parsing failed.", ex))
-        send_slack_error_message(event, None)
+        message = exception_message("Request parsing failed.", ex)
+        logging.error(message)
         sys.exit(1)
 
     if event_type in ["pull_request", "push"]:
@@ -97,26 +121,8 @@ def verify_environment(variables):
     for variable in variables:
         value = os.getenv(variable)
         if value is None:
-            logging.error(f"Missing variable [{variable}] - {variables[variable]}")
+            message = exception_message(f"Missing variable [{variable}] - {variables[variable]}", None)
+            logging.error(message)
             sys.exit(1)
 
 
-def send_slack_error_message(event, status_code):
-    values = extract_payload(event)
-    if status_code is not None:
-        values["status_code"] = status_code
-
-    slack_webhook_url = os.getenv("SLACK_WEBHOOK_URL")
-
-    loader = jinja2.FileSystemLoader("templates")
-    env = jinja2.Environment(loader=loader)
-    env.filters["jsonify"] = json.dumps
-
-    template = env.get_template("failure-message.json.j2")
-    message = template.render(values)
-
-    requests.post(
-        slack_webhook_url,
-        headers={"content-type": "application/json"},
-        json=json.loads(message),
-    )
