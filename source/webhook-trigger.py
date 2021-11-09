@@ -42,17 +42,6 @@ def send_slack_error_message(event, status_code):
     )
 
 
-if sys.version_info < MIN_PYTHON:
-    error_message = "Found Python " + str(sys.version_info) + " but Python %s.%s or later is required. " \
-                                                              "Unable to find towel. Panicking.\n" % MIN_PYTHON
-    send_slack_error_message(error_message, None)
-    sys.exit(error_message)
-
-
-logging.basicConfig()
-logging.getLogger().setLevel(logging.INFO)
-
-
 def exception_message(origin_message, exception_object):
     template = "An exception of type {0} occurred. Arguments:\n{1!r}"
     exception_message_content = template.format(type(exception_object).__name__, exception_object.args)
@@ -126,3 +115,12 @@ def verify_environment(variables):
             sys.exit(1)
 
 
+if sys.version_info < MIN_PYTHON:
+    error_message = "Found Python " + str(sys.version_info) + " but Python %s.%s or later is required. " \
+                                                              "Unable to find towel. Panicking.\n" % MIN_PYTHON
+    send_slack_error_message(error_message, None)
+    sys.exit(error_message)
+
+
+logging.basicConfig()
+logging.getLogger().setLevel(logging.INFO)
