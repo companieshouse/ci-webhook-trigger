@@ -24,7 +24,7 @@ ifndef version
 	$(error No version given. Aborting)
 endif
 	$(info Packaging version: $(version))
-	cd $(source_directory) && lambda build
+	cd $(source_directory) && lambda build --requirements ./requirements.txt
 	mv $(source_directory)/dist/*$(FUNCTION_NAME).zip ./$(FUNCTION_NAME)-$(version).zip
 	# Add templates to zipped artifact
 	zip -ur $(FUNCTION_NAME)-$(version).zip $(templates_directory)
