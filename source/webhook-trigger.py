@@ -116,10 +116,9 @@ def verify_environment(variables):
 
 
 if sys.version_info < MIN_PYTHON:
-    error_message = "Found Python " + str(sys.version_info) + " but Python %s.%s or later is required. " \
-                                                              "Unable to find towel. Panicking.\n" % MIN_PYTHON
-    send_slack_error_message(error_message, None)
-    sys.exit(error_message)
+    build_exception_message = "Found Python " + str(sys.version_info) + " but need Python %s.%s or later." % MIN_PYTHON
+    send_slack_error_message(build_exception_message, None)
+    sys.exit(build_exception_message)
 
 
 logging.basicConfig()
