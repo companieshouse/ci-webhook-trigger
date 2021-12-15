@@ -115,11 +115,14 @@ def verify_environment(variables):
             sys.exit(1)
 
 
-if sys.version_info < MIN_PYTHON:
-    build_exception_message = "Found Python " + str(sys.version_info) + " but need Python %s.%s or later." % MIN_PYTHON
-    send_slack_error_message(build_exception_message, None)
-    sys.exit(build_exception_message)
+def check_python_version(minimum_python_version):
+    if sys.version_info < minimum_python_version:
+        message = "Found Python " + str(sys.version_info) + " but need Python %s.%s or later." % minimum_python_version
+        exception_message(message, None)
+        sys.exit(message)
+    return 0
 
 
+check_python_version(MIN_PYTHON)
 logging.basicConfig()
 logging.getLogger().setLevel(logging.INFO)
