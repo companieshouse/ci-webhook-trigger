@@ -37,7 +37,7 @@ def send_slack_error_message(event, status_code):
 
     requests.post(
         slack_webhook_url,
-        headers={"content-type": "application/json"},
+        headers={"Conent-Type": "application/json"},
         json=json.loads(message),
     )
 
